@@ -7,7 +7,8 @@ class Observe
 {
 public:
     void Init();
-    Vector PosEstimate(F32 Ix,F32 Iy,S32 height,Vector GPS, Vector att);
+
+    Vector PosEstimate(F32 Ix, F32 Iy, S32 height, const Vector &GPS, const Vector &AttPRY);
     static const F32 EarthR=6371004;
     itr_vision::CameraInterCalc interCalc;
     Matrix Ccb;

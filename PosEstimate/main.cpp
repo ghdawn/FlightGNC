@@ -3,9 +3,15 @@
 #include "itrvision.h"
 #include "itrsystem.h"
 #include "observe.h"
+#include "string.h"
+
+using namespace std;
 
 F32 pos_x, pos_y;
 Vector GPS, AttPRY;
+
+const int RecPort = 9033;
+bool stop = false;
 
 class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
     void Do(itr_protocol::StandSerialProtocol *SSP, itr_protocol::StandSerialFrameStruct *SSFS, U8 *Package, S32 PackageLength) {
@@ -39,8 +45,9 @@ class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
     }
 };
 
-const int RecPort = 9033;
-bool stop = false;
+
+char laser_dev[30];
+char fc_dev[30];
 
 void *Image_thread(void *) {
     itr_system::Udp udp(RecPort, false);
@@ -61,12 +68,51 @@ void *Image_thread(void *) {
 
 void *Laser_thread(void *);
 
-void *FC_thread(void *);
+void *FC_thread(void *)
+{
+    itr_protocol::StandSerialProtocol ssp;
+    ssp.Init(0xA5, 0x5A, NULL);
+    ssp.AddDataRecFunc(new RecFunc, 0);
+    itr_system::SerialPort serialPort;
+    serialPort.Init(fc_dev, 115200);
+    const int RecLength = 150;
+    U8 RecBuf[RecLength];
+    while (!stop)
+    {
+        int len = serialPort.Receive(RecBuf, RecLength);
+        if (len > 0)
+        {
+            ssp.ProcessRawByte(RecBuf, RecLength);
+            printf("Get Data\n");
+        }
+    }
+}
 
-using namespace std;
 
+void Init(int argc, char **argv)
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        if (argv[i][0] == '-')
+        {
+            switch (argv[i][1])
+            {
+                case 'f':
+                    strncpy(fc_dev, &argv[i][2], strlen(argv[i]) - 2);
+                    break;
+                case 'l':
+                    strncpy(laser_dev, &argv[i][2], strlen(argv[i]) - 2);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
 
-int main() {
+int main(int argc, char **argv)
+{
+    Init(argc, argv);
     itr_math::MathObjStandInit();
 
     pthread_t tidImage, tidLaser, tidFC;

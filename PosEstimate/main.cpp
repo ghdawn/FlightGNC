@@ -3,7 +3,6 @@
 #include "itrvision.h"
 #include "itrsystem.h"
 #include "observe.h"
-#include "string.h"
 
 using namespace std;
 
@@ -60,7 +59,7 @@ void *Image_thread(void *) {
         int len = udp.Receive(RecBuf, RecLength);
         if (len > 0) {
             ssp.ProcessRawByte((U8 *) RecBuf, RecLength);
-            printf("Get Data\n");
+//            printf("Get Data\n");
         }
 
     }
@@ -74,7 +73,11 @@ void *FC_thread(void *)
     ssp.Init(0xA5, 0x5A, NULL);
     ssp.AddDataRecFunc(new RecFunc, 0);
     itr_system::SerialPort serialPort;
-    serialPort.Init(fc_dev, 115200);
+    if (serialPort.Init(fc_dev, 115200) != 0)
+    {
+        PRINT_DEBUG("No serial port!");
+        return NULL;
+    }
     const int RecLength = 150;
     U8 RecBuf[RecLength];
     while (!stop)
@@ -83,7 +86,6 @@ void *FC_thread(void *)
         if (len > 0)
         {
             ssp.ProcessRawByte(RecBuf, RecLength);
-            printf("Get Data\n");
         }
     }
 }
@@ -119,7 +121,7 @@ int main(int argc, char **argv)
 
     pthread_create(&tidImage, NULL, Image_thread, (void *) ("Image Data"));
 //    pthread_create(&tidLaser, NULL, Laser_thread, (void *) ("Laser"));
-//    pthread_create(&tidFC, NULL, FC_thread, (void *)( "FC" ));
+    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
 
     Vector tmp(3);
     GPS.Init(3);
@@ -128,7 +130,7 @@ int main(int argc, char **argv)
     obs.Init();
     char c = 0;
     while (c == 0) {
-        tmp = obs.PosEstimate(pos_x, pos_y, 1000, GPS, AttPRY);
+        tmp = obs.PosEstimate(230, 96, 735, GPS, AttPRY);
         itr_math::helpdebug::PrintVector(tmp);
         std::cout << std::endl;
         sleep(1);

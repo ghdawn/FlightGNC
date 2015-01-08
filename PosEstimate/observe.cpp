@@ -12,7 +12,11 @@ F32 Observe::MetertoLonDegree(F32 lat,F32 dm)
 
 void Observe::Init()
 {
-    interCalc.SetPara(0.04, 0.01, 0.01, 300, 300);
+//    interCalc.SetParaWithoutF( 246.95264,242.56046, 144.74339 ,118.46835);
+    interCalc.SetParaWithoutF(410.81286, 411.76947, 157.41132, 118.72905);
+    itr_math::helpdebug::PrintMatrix(interCalc.MatC2P);
+    itr_math::helpdebug::PrintMatrix(interCalc.MatP2C);
+//    getchar();
     Ccb.Init(4, 4);
     Ccb.SetDiag(1.0);
 }
@@ -25,6 +29,7 @@ Vector Observe::PosEstimate(F32 Ix, F32 Iy, S32 height, const Vector &GPS, const
     PixelPoint[2]=1;
     interCalc.CalcP2C(PixelPoint, height / 1000.0f, CameraPoint);
     cameraPoint.CopyFrom(CameraPoint.GetData());
+    printf("cameraP: ");
     itr_math::helpdebug::PrintVector(cameraPoint);
 
     Matrix R2(3,3),t2(3,1);
@@ -47,8 +52,10 @@ Vector Observe::PosEstimate(F32 Ix, F32 Iy, S32 height, const Vector &GPS, const
             cospitch*sinyaw,sinroll*sinpitch*sinyaw+cosroll*cosyaw,cosroll*sinpitch*sinyaw-sinroll*cosyaw,
             -sinpitch,sinroll*cospitch,cosroll*cospitch};
     Matrix R(3,3,Rdata);
-    itr_math::helpdebug::PrintMatrix(R);
+
     Vector temp = R * R2 * cameraPoint;
+    printf("temp: ");
+    itr_math::helpdebug::PrintVector(temp);
     temp[0]= MetertoLatDegree(temp[0]);
     temp[1] = MetertoLonDegree(GPS[1], temp[1]);
     temp[0] += GPS[1];

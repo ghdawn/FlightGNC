@@ -92,7 +92,7 @@ void *FC_thread(void *)
     U8 RecBuf[RecLength];
     while (!stop)
     {
-        int len = serialPort.Receive(RecBuf, RecLength);
+        int len = serialPort.Read(RecBuf, RecLength);
         if (len > 0)
         {
             ssp.ProcessRawByte(RecBuf, RecLength);

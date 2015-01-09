@@ -1,12 +1,14 @@
 #include <iostream>
 #include "itrbase.h"
 #include "itrvision.h"
+#include "itrdevice.h"
 #include "itrsystem.h"
 #include "observe.h"
 
 using namespace std;
 
 F32 pos_x, pos_y;
+S32 height;
 Vector GPS, AttPRY;
 
 const int RecPort = 9033;
@@ -65,7 +67,6 @@ void *Image_thread(void *) {
     }
 }
 
-void *Laser_thread(void *);
 
 void *FC_thread(void *)
 {
@@ -130,7 +131,7 @@ int main(int argc, char **argv)
     obs.Init();
     char c = 0;
     while (c == 0) {
-        tmp = obs.PosEstimate(230, 96, 735, GPS, AttPRY);
+        tmp = obs.PosEstimate(pos_x, pos_y, height, GPS, AttPRY);
         itr_math::helpdebug::PrintVector(tmp);
         std::cout << std::endl;
         sleep(1);

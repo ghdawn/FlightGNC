@@ -60,5 +60,6 @@ Vector Observe::PosEstimate(F32 Ix, F32 Iy, S32 height, const Vector &GPS, const
     temp[1] = MetertoLonDegree(GPS[1], temp[1]);
     temp[0] += GPS[1];
     temp[1] += GPS[0];
+    temp[2] = GPS[2] - temp[2];
     return temp;
 }

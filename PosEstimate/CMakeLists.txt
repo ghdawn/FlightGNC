@@ -3,7 +3,7 @@ project(PosEstimate)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-set(SOURCE_FILES main.cpp observe.cpp)
+set(SOURCE_FILES main.cpp observe.cpp laserurg.cpp)
 add_executable(PosEstimate ${SOURCE_FILES})
 
 target_link_libraries( PosEstimate "${PosEstimate_SOURCE_DIR}/../../iTRLib/itrbase/bin/debug/libitrbase.a" )

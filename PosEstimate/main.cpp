@@ -57,7 +57,7 @@ void OnLaserDataReceive(int *data, int length)
     {
         printf("%d ", data[i + length / 2]);
     }
-    printf("\n");
+    cout << endl;
 }
 void *Image_thread(void *) {
     itr_system::Udp udp(RecPort, false);

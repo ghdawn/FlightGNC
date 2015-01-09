@@ -20,9 +20,9 @@ Process onRec = NULL;
 pthread_t tid;
 
 itr_system::SerialPort _sp;
-const int MAX_DATALENGTH = 768;
-int _data1[MAX_DATALENGTH];
-int _data2[MAX_DATALENGTH];
+const int MAX_DATALENGTH = 769;
+int _data1[MAX_DATALENGTH * 3];
+int _data2[MAX_DATALENGTH * 3];
 int _length1;
 int _length2;
 int *_data;
@@ -50,6 +50,12 @@ void LaserInit(char *dev, int baudrate)
     }
     read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
     read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
+    _sp.Send((unsigned char *) "SCIP2.0\n", 8);
+    int i = 3;
+    while (i--)
+    {
+        read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
+    }
 
     _data_which = true;
     _length1 = 0;
@@ -71,7 +77,6 @@ void *WorkThread(void *)
     _sp.Send(_start_cmd, _start_cmd_length);
     int index = 0, i = 0, j = 0, k = 0;
 
-
     int factor[3] = {0};
 
     while (1)
@@ -79,8 +84,9 @@ void *WorkThread(void *)
         read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
         if (CHAR_BUFFER[0] == 'M' && CHAR_BUFFER[1] == 'D')
         {
-            read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
+            //read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
             read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);//读取99blf
+
             if (CHAR_BUFFER[0] == '9' && CHAR_BUFFER[1] == '9' && CHAR_BUFFER[2] == 'b')
             {
                 read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);//Time Stamp
@@ -114,7 +120,7 @@ void *WorkThread(void *)
 
                 }
 
-                if (index > MAX_DATALENGTH)
+                if (index > MAX_DATALENGTH * 3)
                     printf("MAX_DATALENGTH not enough!\n");
 
                 /*decode */
@@ -126,11 +132,10 @@ void *WorkThread(void *)
                     k++;
                     if (k % 3 == 0)
                     {
-                        _data[*_length] = factor[2] + (factor[1]) << 6 + (factor[0]) << 12;
+                        _data[*_length] = factor[2] | (factor[1] << 6) | (factor[0] << 12);
                         (*_length)++;
                         k = 0;
                     }
-                    index++;
                 }
                 _data_which = !_data_which;
 
@@ -143,6 +148,9 @@ void *WorkThread(void *)
             else
             {
                 printf("status is not 99b\n");
+                if (CHAR_BUFFER[0] == '0' && CHAR_BUFFER[1] == '0' && CHAR_BUFFER[2] == 'P')
+                    printf("status if 00P\n");
+                // read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
                 /*   _sp.Send(_reset_cmd, _reset_cmd_length);//RESET THE URG
                    _sp.Receive(CHAR_BUFFER, 1);
                    while (CHAR_BUFFER[0] != 0x0a)

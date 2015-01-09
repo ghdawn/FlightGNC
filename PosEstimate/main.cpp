@@ -4,6 +4,7 @@
 #include "itrdevice.h"
 #include "itrsystem.h"
 #include "observe.h"
+#include "laserurg.h"
 
 using namespace std;
 
@@ -50,6 +51,14 @@ class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
 char laser_dev[30];
 char fc_dev[30];
 
+void OnLaserDataReceive(int *data, int length)
+{
+    for (int i = -5; i < 5; ++i)
+    {
+        printf("%d ", data[i + length / 2]);
+    }
+    printf("\n");
+}
 void *Image_thread(void *) {
     itr_system::Udp udp(RecPort, false);
     itr_protocol::StandSerialProtocol ssp;
@@ -111,6 +120,10 @@ void Init(int argc, char **argv)
             }
         }
     }
+    LaserInit(laser_dev, 115200);
+    LaserSetProcess(OnLaserDataReceive);
+    LaserStart();
+    getchar();
 }
 
 int main(int argc, char **argv)

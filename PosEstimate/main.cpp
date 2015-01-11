@@ -15,9 +15,18 @@ Vector GPS, AttPRY;
 const int RecPort = 9033;
 bool stop = false;
 
+const U8 IDLE = 0;
+const U8 CAPTURE = 1;
+const U8 TRACK = 2;
+const U8 EXIT = 3;
+U8 mode = IDLE;
+
 class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
     void Do(itr_protocol::StandSerialProtocol *SSP, itr_protocol::StandSerialFrameStruct *SSFS, U8 *Package, S32 PackageLength) {
         switch (Package[0]) {
+            case 0x41:
+                mode = Package[1];
+                break;
             case 0x40:
                 pos_x = *((F32 *) (Package + 6));
                 pos_y = *((F32 *) (Package + 10));
@@ -66,7 +75,8 @@ void *Image_thread(void *) {
     ssp.AddDataRecFunc(new RecFunc, 0);
     const int RecLength = 50;
     char RecBuf[RecLength];
-    while (!stop) {
+    while (mode != EXIT)
+    {
         int len = udp.Receive(RecBuf, RecLength);
         if (len > 0) {
             ssp.ProcessRawByte((U8 *) RecBuf, RecLength);
@@ -90,7 +100,7 @@ void *FC_thread(void *)
     }
     const int RecLength = 150;
     U8 RecBuf[RecLength];
-    while (!stop)
+    while (mode != EXIT)
     {
         int len = serialPort.Read(RecBuf, RecLength);
         if (len > 0)
@@ -126,26 +136,70 @@ void Init(int argc, char **argv)
     getchar();
 }
 
+
+bool isOK(F32 value, F32 target)
+{
+    const F32 eps = 1e-6;
+    if (fabs(value - target) > eps)
+        return false;
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     Init(argc, argv);
     itr_math::MathObjStandInit();
-
-    pthread_t tidImage, tidLaser, tidFC;
-
-    pthread_create(&tidImage, NULL, Image_thread, (void *) ("Image Data"));
-//    pthread_create(&tidLaser, NULL, Laser_thread, (void *) ("Laser"));
-    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
-
-    Vector tmp(3);
+    Vector result(3);
     GPS.Init(3);
     AttPRY.Init(3);
+
+    pthread_t tidImage, tidFC;
+    pthread_create(&tidImage, NULL, Image_thread, (void *) ("Image Data"));
+    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
+
+
     Observe obs;
     obs.Init();
-    char c = 0;
-    while (c == 0) {
-        tmp = obs.PosEstimate(pos_x, pos_y, height, GPS, AttPRY);
-        itr_math::helpdebug::PrintVector(tmp);
+
+    CycleQueue<Vector> posData;
+    CycleQueue<F32> lat;
+    CycleQueue<F32> lon;
+    CycleQueue<F32> alt;
+    const S32 Capacity = 500;
+    posData.Init(Capacity);
+    lat.Init(Capacity);
+    lon.Init(Capacity);
+    alt.Init(Capacity);
+    F32 midlat, midlon, midalt;
+    S32 ncount = 0;
+    while (mode != EXIT)
+    {
+        result = obs.PosEstimate(pos_x, pos_y, height, GPS, AttPRY);
+        posData.Insert(result);
+        lat.Insert(result[0]);
+        lon.Insert(result[1]);
+        alt.Insert(result[2]);
+
+        S32 length = lat.GetLength();
+        itr_math::StatisticsObj->Median(lat.GetBase(), length, midlat);
+        itr_math::StatisticsObj->Median(lon.GetBase(), length, midlon);
+        itr_math::StatisticsObj->Median(alt.GetBase(), length, midalt);
+        ncount = 0;
+        result[0] = result[1] = result[2] = 0;
+        for (int i = 0; i < length; ++i)
+        {
+            if (isOK(lat[i], midlat)
+                    && isOK(lon[i], midlon)
+                    && isOK(alt[i], midalt))
+            {
+                result[0] += lat[i];
+                result[1] += lon[i];
+                result[2] += alt[i];
+                ++ncount;
+            }
+        }
+        result.Mul(1f / ncount);
+        itr_math::helpdebug::PrintVector(result);
         std::cout << std::endl;
         sleep(1);
     }

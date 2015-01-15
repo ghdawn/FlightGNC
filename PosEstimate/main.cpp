@@ -176,9 +176,11 @@ void Init(int argc, char **argv)
             }
         }
     }
-    LaserInit(laser_dev, 115200);
-    LaserSetProcess(OnLaserDataReceive);
-    LaserStart();
+    if (LaserInit(laser_dev, 115200))
+    {
+        LaserSetProcess(OnLaserDataReceive);
+        LaserStart();
+    }
     sensorData.keyword = 0x46;
 }
 

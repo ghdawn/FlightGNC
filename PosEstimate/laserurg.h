@@ -4,7 +4,7 @@
 typedef void (*Process)(int *data, int length);
 
 ///初始化串口和波特率
-void LaserInit(char *dev, int baudrate);
+bool LaserInit(char *dev, int baudrate);
 
 void LaserSetProcess(Process process);
 

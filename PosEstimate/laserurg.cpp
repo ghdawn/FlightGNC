@@ -37,10 +37,14 @@ const int BUFFER_LENGTH = 128;
 unsigned char CHAR_BUFFER[BUFFER_LENGTH];
 int read_length = 0;
 
-void LaserInit(char *dev, int baudrate)
+bool LaserInit(char *dev, int baudrate)
 {
 
-    _sp.Init(dev, baudrate);
+    if (_sp.Init(dev, baudrate) < 0)
+    {
+        PRINT_DEBUG("Error Laser");
+        return false;
+    }
     _sp.Send(_reset_cmd, _reset_cmd_length);//RESET THE URG
 
     read_length = _sp.ReadLine(CHAR_BUFFER, BUFFER_LENGTH);
@@ -64,6 +68,7 @@ void LaserInit(char *dev, int baudrate)
     StepA = 0;
     StepB = 384;
     StepC = 768;
+    return true;
 }
 
 void LaserSetProcess(Process process)

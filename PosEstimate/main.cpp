@@ -11,7 +11,7 @@ using namespace std;
 F32 pos_x, pos_y;
 Vector GPS, AttPRY;
 
-const int RecPort = 9033, ClientPort = 9032;
+const int RecPort = 9033, ClientPort = 9034;
 
 const U8 IDLE = 0;
 const U8 CAPTURE = 1;
@@ -20,11 +20,10 @@ const U8 EXIT = 3;
 U8 mode = IDLE;
 struct SensorData
 {
-    U8 keyword;
     F32 height;
     F32 x, y;
     S32 laserlength;
-    S32 laser[768];
+    S32 laser[780];
 };
 SensorData sensorData;
 
@@ -63,37 +62,17 @@ class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
     }
 };
 
-class SSPSend : public itr_protocol::StandSerialProtocol::SSPDataSendFun
-{
-public:
-    itr_system::Udp udp;
-    itr_system::Udp::UdpPackage package;
-
-    SSPSend(string IP)
-    {
-        package.IP = IP;
-        package.port = ClientPort;
-    }
-
-    S32 Do(U8 *Buffer, S32 Length)
-    {
-        package.pbuffer = (char *) Buffer;
-        package.len = Length;
-        udp.Send(package);
-    }
-};
-
 int height = 0;
 char laser_dev[30];
 char fc_dev[30];
 string ClientIP;
 void OnLaserDataReceive(int *data, int length)
 {
-    itr_protocol::StandSerialProtocol ssp;
-    ssp.Init(0xA5, 0x5A, new SSPSend(ClientIP));
+    itr_system::Udp udp;
+    itr_system::Udp::UdpPackage package;
 
     int tempheight = 0, count = 0;
-    for (int i = 44; i < 49; ++i)
+    for (int i = 45; i <= 49; ++i)
     {
         tempheight += data[i];
         ++count;
@@ -106,11 +85,14 @@ void OnLaserDataReceive(int *data, int length)
     height = tempheight / count;
     for (int j = 0; j < length; ++j)
     {
-        sensorData.laser[j];
+        sensorData.laser[j] = data[j];
     }
     sensorData.laserlength = length;
-    ssp.SSPSendPackage(0, (U8 *) &sensorData, sizeof(sensorData));
-
+    package.pbuffer = (char *) &sensorData;
+    package.len = sizeof(sensorData);
+    package.IP = ClientIP;
+    package.port = ClientPort;
+    udp.Send(package);
 }
 void *Image_thread(void *) {
     itr_system::Udp udp(RecPort, false);
@@ -181,7 +163,6 @@ void Init(int argc, char **argv)
         LaserSetProcess(OnLaserDataReceive);
         LaserStart();
     }
-    sensorData.keyword = 0x46;
 }
 
 
@@ -201,7 +182,7 @@ int main(int argc, char **argv)
 
     pthread_t tidImage, tidFC;
     pthread_create(&tidImage, NULL, Image_thread, (void *) ("Image Data"));
-    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
+//    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
 
 
     Observe obs;

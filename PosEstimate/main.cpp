@@ -9,17 +9,24 @@
 using namespace std;
 
 F32 pos_x, pos_y;
-S32 height;
 Vector GPS, AttPRY;
 
-const int RecPort = 9033;
-bool stop = false;
+const int RecPort = 9033, ClientPort = 9032;
 
 const U8 IDLE = 0;
 const U8 CAPTURE = 1;
 const U8 TRACK = 2;
 const U8 EXIT = 3;
 U8 mode = IDLE;
+struct SensorData
+{
+    U8 keyword;
+    F32 height;
+    F32 x, y;
+    S32 laserlength;
+    S32 laser[768];
+};
+SensorData sensorData;
 
 class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
     void Do(itr_protocol::StandSerialProtocol *SSP, itr_protocol::StandSerialFrameStruct *SSFS, U8 *Package, S32 PackageLength) {
@@ -56,17 +63,54 @@ class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
     }
 };
 
+class SSPSend : public itr_protocol::StandSerialProtocol::SSPDataSendFun
+{
+public:
+    itr_system::Udp udp;
+    itr_system::Udp::UdpPackage package;
 
+    SSPSend(string IP)
+    {
+        package.IP = IP;
+        package.port = ClientPort;
+    }
+
+    S32 Do(U8 *Buffer, S32 Length)
+    {
+        package.pbuffer = (char *) Buffer;
+        package.len = Length;
+        udp.Send(package);
+    }
+};
+
+int height = 0;
 char laser_dev[30];
 char fc_dev[30];
-
+string ClientIP;
 void OnLaserDataReceive(int *data, int length)
 {
-    for (int i = -5; i < 5; ++i)
+    itr_protocol::StandSerialProtocol ssp;
+    ssp.Init(0xA5, 0x5A, new SSPSend(ClientIP));
+
+    int tempheight = 0, count = 0;
+    for (int i = 44; i < 49; ++i)
     {
-        printf("%d ", data[i + length / 2]);
+        tempheight += data[i];
+        ++count;
     }
-    cout << endl;
+    for (int i = 714; i < 725; i++)
+    {
+        tempheight += data[i];
+        ++count;
+    }
+    height = tempheight / count;
+    for (int j = 0; j < length; ++j)
+    {
+        sensorData.laser[j];
+    }
+    sensorData.laserlength = length;
+    ssp.SSPSendPackage(0, (U8 *) &sensorData, sizeof(sensorData));
+
 }
 void *Image_thread(void *) {
     itr_system::Udp udp(RecPort, false);
@@ -125,6 +169,8 @@ void Init(int argc, char **argv)
                 case 'l':
                     strncpy(laser_dev, &argv[i][2], strlen(argv[i]) - 2);
                     break;
+                case 'a':
+                    ClientIP.assign(&argv[i][2]);
                 default:
                     break;
             }
@@ -133,16 +179,14 @@ void Init(int argc, char **argv)
     LaserInit(laser_dev, 115200);
     LaserSetProcess(OnLaserDataReceive);
     LaserStart();
-    getchar();
+    sensorData.keyword = 0x46;
 }
 
 
 bool isOK(F32 value, F32 target)
 {
     const F32 eps = 1e-6;
-    if (fabs(value - target) > eps)
-        return false;
-    return true;
+    return fabs(value - target) <= eps;
 }
 
 int main(int argc, char **argv)
@@ -161,12 +205,10 @@ int main(int argc, char **argv)
     Observe obs;
     obs.Init();
 
-    CycleQueue<Vector> posData;
     CycleQueue<F32> lat;
     CycleQueue<F32> lon;
     CycleQueue<F32> alt;
     const S32 Capacity = 500;
-    posData.Init(Capacity);
     lat.Init(Capacity);
     lon.Init(Capacity);
     alt.Init(Capacity);
@@ -175,7 +217,6 @@ int main(int argc, char **argv)
     while (mode != EXIT)
     {
         result = obs.PosEstimate(pos_x, pos_y, height, GPS, AttPRY);
-        posData.Insert(result);
         lat.Insert(result[0]);
         lon.Insert(result[1]);
         alt.Insert(result[2]);
@@ -198,7 +239,10 @@ int main(int argc, char **argv)
                 ++ncount;
             }
         }
-        result.Mul(1f / ncount);
+        result.Mul(1.0f / ncount);
+        sensorData.x = result[0];
+        sensorData.y = result[1];
+        sensorData.height = result[2];
         itr_math::helpdebug::PrintVector(result);
         std::cout << std::endl;
         sleep(1);

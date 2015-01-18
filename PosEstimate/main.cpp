@@ -39,22 +39,24 @@ class RecFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun {
                 break;
             case 0x10:
                 S16 tmp16;
-                tmp16 = *((S16 *) (Package + 3));
+                tmp16 = *((S16 *) (Package + 4));
                 AttPRY[0] = tmp16 * 0.1f;
-                tmp16 = *((S16 *) (Package + 5));
+                tmp16 = *((S16 *) (Package + 6));
                 AttPRY[1] = tmp16 * 0.1f;
-                tmp16 = *((S16 *) (Package + 7));
+                tmp16 = *((S16 *) (Package + 8));
                 AttPRY[2] = tmp16 * 0.1f;
+
                 break;
             case 0x11:
                 S32 tmp32;
                 U16 tmpu16;
-                tmp32 = *((S32 *) (Package));
+                tmp32 = *((S32 *) (Package + 1));
                 GPS[0] = tmp32 * 1e-7f;
-                tmp32 = *((S32 *) (Package + 4));
+                tmp32 = *((S32 *) (Package + 5));
                 GPS[1] = tmp32 * 1e-7f;
-                tmpu16 = *((U16 *) (Package + 8));
+                tmpu16 = *((U16 *) (Package + 9));
                 GPS[2] = tmpu16 * 0.2f - 1000.0f;
+
                 break;
             default:
                 break;
@@ -132,7 +134,12 @@ void *FC_thread(void *)
         if (len > 0)
         {
             ssp.ProcessRawByte(RecBuf, RecLength);
+            cout << "GPS:" << endl;
+            itr_math::helpdebug::PrintVector(GPS);
+            cout << "Att:" << endl;
+            itr_math::helpdebug::PrintVector(AttPRY);
         }
+        usleep(100 * 1000);
     }
 }
 
@@ -182,7 +189,7 @@ int main(int argc, char **argv)
 
     pthread_t tidImage, tidFC;
     pthread_create(&tidImage, NULL, Image_thread, (void *) ("Image Data"));
-//    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
+    pthread_create(&tidFC, NULL, FC_thread, (void *) ("FC"));
 
 
     Observe obs;
@@ -228,7 +235,7 @@ int main(int argc, char **argv)
         sensorData.height = result[2];
         itr_math::helpdebug::PrintVector(result);
         std::cout << std::endl;
-        sleep(1);
+        usleep(100000);
     }
     cout << "Hello, World!" << endl;
     return 0;

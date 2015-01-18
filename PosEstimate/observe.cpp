@@ -56,10 +56,10 @@ Vector Observe::PosEstimate(F32 Ix, F32 Iy, S32 height, const Vector &GPS, const
     Vector temp = R * R2 * cameraPoint;
     printf("temp: ");
     itr_math::helpdebug::PrintVector(temp);
-    temp[0]= MetertoLatDegree(temp[0]);
-    temp[1] = MetertoLonDegree(GPS[1], temp[1]);
-    temp[0] += GPS[1];
-    temp[1] += GPS[0];
+    F32 Lat = MetertoLatDegree(temp[0]);
+    F32 Lon = MetertoLonDegree(GPS[1], temp[1]);
+    temp[0] = GPS[0] + Lon;
+    temp[1] = GPS[1] + Lat;
     temp[2] = GPS[2] - temp[2];
     return temp;
 }

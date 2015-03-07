@@ -1,0 +1,1 @@
+./RecPlayer /home/ghdawn/workspace/simpleColorTrack/bin/rec10/rec%06d.dat 1

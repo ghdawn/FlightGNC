@@ -1,78 +1,30 @@
 #include <iostream>
-#include <string>
 #include "itrbase.h"
 #include "itrdevice.h"
 #include "itrsystem.h"
 #include "ix264.h"
+#include "config.h"
+#include "iocontrol.h"
+
 using namespace std;
 
 itr_device::ICamera *camera=NULL;
 itrx264::ix264 compress;
-itr_system::Udp *udp=NULL;
-itr_protocol::StandSerialProtocol sspUdp;
+IOControl ioControl;
 const void *imgCompressData;
 int imgLength;
 S32 width, height;
-S32 cameraID, cameraTunnel;
-string IP;
-S32 tport=0,rport=0;
-F32 fps=0;
-S32 SendLength;
-const int MaxSendLength=65535;
-const int MaxRecLength=200;
-char RecBuf[MaxRecLength];
-char SendBuf[MaxSendLength];
 
-enum eState
-{
-    IDLE=0,CAPTURE,TRACK,EXIT
-};
 eState state=CAPTURE;
-
-class SSPReceiveFunc : public itr_protocol::StandSerialProtocol::SSPDataRecFun
-{
-    void Do(itr_protocol::StandSerialProtocol *SSP, itr_protocol::StandSerialFrameStruct *SSFS, U8 *Package, S32 PackageLength)
-    {
-        F32 *a, *b, *c, *d;
-        switch (Package[0])
-        {
-            case 0x41:
-                state = (eState) Package[1];
-                break;
-            case 0x42:
-
-                break;
-            case 0x44:
-
-            case 0x43:
-
-            case 0x45:
-
-            default:
-                break;
-        }
-    }
-};
-
-class SSPSend : public itr_protocol::StandSerialProtocol::SSPDataSendFun {
-    S32 Do(U8 *Buffer, S32 Length) {
-        memcpy(SendBuf, Buffer, Length);
-        memcpy(SendBuf + Length,  imgCompressData,imgLength);
-        SendLength = Length + imgLength;
-        itr_system::Udp::UdpPackage udpPackage;
-        udpPackage.pbuffer=SendBuf;
-        udpPackage.port = tport;
-        udpPackage.IP = IP;
-        udpPackage.len = SendLength;
-        udp->Send(udpPackage);
-        return SendLength;
-    }
-};
-
 bool Init(int argc, char *argv[])
 {
     itr_math::MathObjStandInit();
     const int npara=17;
+    string IP;
+    S32 cameraTunnel=0;
+    U32 cameraID = 0;
+    S32 tport=0,rport=0;
+    F32 fps=0;
     if (argc < npara)
     {
         printf("Help!\n");
@@ -143,9 +95,10 @@ bool Init(int argc, char *argv[])
     }
     else return false;
 
-    udp=new itr_system::Udp(rport,false);
-    sspUdp.SetDataSendFunc(new SSPSend);
-    sspUdp.AddDataRecFunc(new SSPReceiveFunc, 0);
+
+    ioControl.Init(IP,rport,tport,&imgCompressData,&imgLength);
+    ioControl.SetControlState(&state);
+
     return true;
 }
 
@@ -162,13 +115,9 @@ int main(int argc, char *argv[])
     int size=width*height;
     U8* pic=new U8[size*3/2];
     U8 sspbuffer[18];
-    int len;
     while (state != EXIT)
     {
-        if(len=udp->Receive(RecBuf, MaxRecLength))
-        {
-            sspUdp.ProcessRawByte((U8 *) RecBuf, len);
-        }
+        ioControl.CheckIncomingData();
         if( state == IDLE)
         {
             sleep(1);
@@ -180,15 +129,15 @@ int main(int argc, char *argv[])
         data[1]=pic+size;
         data[2]=pic+size+size/4;
         data[3]=NULL;
-        int rc = compress.Compress(data, stride,&imgCompressData , &imgLength);
+        compress.Compress(data, stride,&imgCompressData , &imgLength);
         sspbuffer[0]=0x40;
         sspbuffer[1]=1;
-        sspUdp.SSPSendPackage(0, sspbuffer, 18);
+        ioControl.SendData(sspbuffer,18);
     }
     compress.Close();
     camera->Close();
     delete pic;
     delete camera;
-    delete udp;
+
     return 0;
 }

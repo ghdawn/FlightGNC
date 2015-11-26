@@ -1,6 +1,7 @@
 #include <iostream>
 #include "itrbase.h"
 #include "itrdevice.h"
+#include "itrvision.h"
 #include "itrsystem.h"
 #include "ix264.h"
 #include "config.h"
@@ -115,6 +116,9 @@ int main(int argc, char *argv[])
     int size=width*height;
     U8* pic=new U8[size*3/2];
     U8 sspbuffer[18];
+    itr_vision::MeanShift *meanShift=NULL;
+    Matrix img(height,width);
+    RectangleF rect(140,100,40,40);
     while (state != EXIT)
     {
         ioControl.CheckIncomingData();
@@ -130,8 +134,45 @@ int main(int argc, char *argv[])
         data[2]=pic+size+size/4;
         data[3]=NULL;
         compress.Compress(data, stride,&imgCompressData , &imgLength);
+        if (state != TRACK)
+        {
+            if (meanShift!=NULL)
+            {
+                delete meanShift;
+                meanShift = NULL;
+            }
+        }
+        if (state == TRACK)
+        {
+            for (int i = 0; i < height; ++i)
+            {
+                for (int j = 0; j < width; ++j)
+                {
+                    img(i,j)=pic[i*width+j];
+                }
+            }
+            if(meanShift!=NULL)
+            {
+                meanShift->Go(img,rect);
+            }
+            else
+            {
+                meanShift = new itr_vision::MeanShift;
+                meanShift->Init(img,rect,itr_vision::MeanShift::IMG_GRAY);
+            }
+        }
+
         sspbuffer[0]=0x40;
-        sspbuffer[1]=1;
+        sspbuffer[1]=state;
+        float fps = 10;
+        memcpy(sspbuffer+2,&fps,4);
+        float x=rect.X+rect.Width*0.5;
+        memcpy(sspbuffer+6,&x,4);
+        float y=rect.Y+rect.Height*0.5;
+        memcpy(sspbuffer+10,&y,4);
+        float Area=1600;
+        memcpy(sspbuffer+14,&Area,4);
+//        printf("Pos:%f %f\n",rect.X,rect.Y);
         ioControl.SendData(sspbuffer,18);
     }
     compress.Close();

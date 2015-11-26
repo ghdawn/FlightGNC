@@ -62,7 +62,7 @@ void IOControl::Init(string IP, int ReceivePort, int TransmitPort,const void** i
     udp=new itr_system::Udp(ReceivePort,false);
     sendobj = new SSPSend(SendBuf,imgCompressData,imgLength);
     receiveObj = new SSPReceive();
-    sspUdp.SetDataSendFunc(sendobj);
+    sspUdp.Init(0xA5,0x5A,sendobj);
     sspUdp.AddDataRecFunc(receiveObj, 0);
 
     udpPackage.port = TransmitPort;

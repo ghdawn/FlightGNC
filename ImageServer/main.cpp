@@ -119,8 +119,10 @@ int main(int argc, char *argv[])
     itr_vision::MeanShift *meanShift=NULL;
     Matrix img(height,width);
     RectangleF rect(140,100,40,40);
+    TimeClock tc;
     while (state != EXIT)
     {
+        tc.Tick();
         ioControl.CheckIncomingData();
         if( state == IDLE)
         {
@@ -158,13 +160,15 @@ int main(int argc, char *argv[])
             else
             {
                 meanShift = new itr_vision::MeanShift;
+                rect.X = 140;
+                rect.Y = 100;
                 meanShift->Init(img,rect,itr_vision::MeanShift::IMG_GRAY);
             }
         }
 
         sspbuffer[0]=0x40;
         sspbuffer[1]=state;
-        float fps = 10;
+        float fps = 1000.0/tc.Tick();
         memcpy(sspbuffer+2,&fps,4);
         float x=rect.X+rect.Width*0.5;
         memcpy(sspbuffer+6,&x,4);

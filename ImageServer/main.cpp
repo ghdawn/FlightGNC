@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
         memcpy(sspbuffer+10,&y,4);
         float Area=1600;
         memcpy(sspbuffer+14,&Area,4);
-//        printf("Pos:%f %f\n",rect.X,rect.Y);
+        printf("fps:%f\n",fps);
         ioControl.SendData(sspbuffer,18);
     }
     compress.Close();

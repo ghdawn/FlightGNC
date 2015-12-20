@@ -120,22 +120,27 @@ int main(int argc, char *argv[])
     Matrix img(height,width);
     RectangleF rect(140,100,40,40);
     TimeClock tc;
+    Log log;
+    log.enablePrint();
+    log.enableTime();
     while (state != EXIT)
     {
         tc.Tick();
         ioControl.CheckIncomingData();
+        printf("State:%d\n",state);
         if( state == IDLE)
         {
             sleep(1);
             continue;
         }
         camera->FetchFrame(pic,size*3/2,NULL);
-
+        log.log("get image");
         data[0]=pic;
         data[1]=pic+size;
         data[2]=pic+size+size/4;
         data[3]=NULL;
         compress.Compress(data, stride,&imgCompressData , &imgLength);
+        log.log("x264");
         if (state != TRACK)
         {
             if (meanShift!=NULL)
@@ -165,7 +170,7 @@ int main(int argc, char *argv[])
                 meanShift->Init(img,rect,itr_vision::MeanShift::IMG_GRAY);
             }
         }
-
+        log.log("track");
         sspbuffer[0]=0x40;
         sspbuffer[1]=state;
         float fps = 1000.0/tc.Tick();
@@ -178,6 +183,7 @@ int main(int argc, char *argv[])
         memcpy(sspbuffer+14,&Area,4);
         printf("fps:%f\n",fps);
         ioControl.SendData(sspbuffer,18);
+        log.log("send");
     }
     compress.Close();
     camera->Close();

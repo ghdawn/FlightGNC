@@ -180,6 +180,7 @@ int main(int argc, char *argv[])
         bs.setU8((U8) (rect.Width * 250 / width));
         bs.setU8((U8) (rect.Height * 250 / height));
         itr_protocol::StandardExchangePackage sep(0x10);
+        sep.setSID(0x05);
         sep.data.assign(sendbuffer,sendbuffer+bs.getLength());
         ioControl.SendData(sep, (void *) imgCompressData, imgLength);
         log.log("send");

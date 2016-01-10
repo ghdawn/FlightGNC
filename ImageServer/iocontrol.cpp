@@ -53,42 +53,55 @@ private:
 
 void IOControl::SetControlState(eState *state)
 {
-    this->receiveObj->SetControlState(state);
+//    this->receiveObj->SetControlState(state);
 
 }
 
 void IOControl::Init(string IP, int ReceivePort, int TransmitPort,const void** imgCompressData, int* imgLength)
 {
     udp=new itr_system::Udp(ReceivePort,false);
-    sendobj = new SSPSend(SendBuf,imgCompressData,imgLength);
-    receiveObj = new SSPReceive();
-    sspUdp.Init(0xA5,0x5A,sendobj);
-    sspUdp.AddDataRecFunc(receiveObj, 0);
 
     udpPackage.port = TransmitPort;
     udpPackage.IP = IP;
-    udpPackage.pbuffer=IOControl::SendBuf;
+    udpPackage.pbuffer=SendBuf;
+
+    imgData = (U8 **) imgCompressData;
+    imgLen= imgLength;
 }
 
 IOControl::~IOControl()
+
 {
     delete udp;
-    delete sendobj;
-    delete receiveObj;
 }
 
 void IOControl::CheckIncomingData()
 {
     int len;
     len = udp->Receive(RecBuf, MaxRecLength);
+    itr_protocol::StandardExchangeProtocolSerial protocolSerial;
     if(len>0)
     {
-        sspUdp.ProcessRawByte((U8 *) RecBuf, len);
+        protocolSerial.processByte((U8 *) RecBuf,0, len);
     }
 }
 
-void IOControl::SendData(U8 *data, S32 length)
+void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep)
 {
-    udpPackage.len = sspUdp.SSPSendPackage(0, data, length);
-    udp->Send(udpPackage);
+    itr_protocol::StandardExchangeProtocolSerial protocolSerial;
+    int len = protocolSerial.fillBuffer(sep, (U8 *) SendBuf);
+    itr_protocol::ComboPackage cp;
+    cp.F0 = 'E';
+    cp.F1 = 'P';
+    cp.length = (U32) len;
+    MemoryCopy(cp.data,SendBuf,len);
+    len = cp.writeTo((U8 *) SendBuf, 0);
+    cp.F0 = 'X';
+    cp.F1 = '4';
+    cp.length = (U32) *imgLen;
+    MemoryCopy(cp.data, *imgData, *imgLen);
+    len = cp.writeTo((U8 *) SendBuf, len);
+
+    udpPackage.len = len;
+    printf("\n%d\n",udp->Send(udpPackage));
 }

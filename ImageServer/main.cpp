@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     stride[3]=0;
     int size=width*height;
     U8* pic=new U8[size*3/2];
-    U8 sspbuffer[18];
+    U8 sendbuffer[18];
     itr_vision::MeanShift *meanShift=NULL;
     Matrix img(height,width);
     RectangleF rect(140,100,40,40);
@@ -171,18 +171,17 @@ int main(int argc, char *argv[])
             }
         }
         log.log("track");
-        sspbuffer[0]=0x40;
-        sspbuffer[1]=state;
-        float fps = 1000.0/tc.Tick();
-        memcpy(sspbuffer+2,&fps,4);
-        float x=rect.X+rect.Width*0.5;
-        memcpy(sspbuffer+6,&x,4);
-        float y=rect.Y+rect.Height*0.5;
-        memcpy(sspbuffer+10,&y,4);
-        float Area=1600;
-        memcpy(sspbuffer+14,&Area,4);
-        printf("fps:%f\n",fps);
-        ioControl.SendData(sspbuffer,18);
+        itr_container::ByteStream bs((void *) sendbuffer);
+        bs.setU8(state);
+        bs.setU8(0x1f);
+        bs.setU8(50);
+        bs.setU16((U16) (rect.X * 10000 / width));
+        bs.setU16((U16) (rect.Y * 10000 / height));
+        bs.setU8((U8) (rect.Width * 250 / width));
+        bs.setU8((U8) (rect.Height * 250 / height));
+        itr_protocol::StandardExchangePackage sep(0x10);
+        sep.data.assign(sendbuffer,sendbuffer+bs.getLength());
+        ioControl.SendData(sep);
         log.log("send");
     }
     compress.Close();

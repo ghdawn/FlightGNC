@@ -14,7 +14,7 @@ public:
     void Init(string IP,int ReceivePort,int TransmitPort,const void** imgCompressData, int* imgLength);
     void SetControlState(eState *state);
     void CheckIncomingData();
-    void SendData(U8* data,S32 length);
+    void SendData(const itr_protocol::StandardExchangePackage& sep);
     ~IOControl();
 private:
 
@@ -26,7 +26,11 @@ private:
     itr_protocol::StandSerialProtocol sspUdp;
     itr_system::Udp* udp;
 
+    U8** imgData;
+    int* imgLen;
+
     char RecBuf[MaxRecLength];
     char SendBuf[MaxSendLength];
+
 };
 #endif //IMAGESERVER_IOCONTROL_H

@@ -11,10 +11,10 @@
 class IOControl
 {
 public:
-    void Init(string IP,int ReceivePort,int TransmitPort,const void** imgCompressData, int* imgLength);
+    void Init(string IP,int ReceivePort,int TransmitPort);
     void SetControlState(eState *state);
     void CheckIncomingData();
-    void SendData(const itr_protocol::StandardExchangePackage& sep);
+    void SendData(const itr_protocol::StandardExchangePackage& sep, void* imgData=0,int imgLen=0);
     ~IOControl();
 private:
 

@@ -57,16 +57,13 @@ void IOControl::SetControlState(eState *state)
 
 }
 
-void IOControl::Init(string IP, int ReceivePort, int TransmitPort,const void** imgCompressData, int* imgLength)
+void IOControl::Init(string IP, int ReceivePort, int TransmitPort)
 {
     udp=new itr_system::Udp(ReceivePort,false);
 
     udpPackage.port = TransmitPort;
     udpPackage.IP = IP;
     udpPackage.pbuffer=SendBuf;
-
-    imgData = (U8 **) imgCompressData;
-    imgLen= imgLength;
 }
 
 IOControl::~IOControl()
@@ -86,7 +83,7 @@ void IOControl::CheckIncomingData()
     }
 }
 
-void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep)
+void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep,void* imgData,int imgLen)
 {
     itr_protocol::StandardExchangeProtocolSerial protocolSerial;
     int len = protocolSerial.fillBuffer(sep, (U8 *) SendBuf);
@@ -96,12 +93,15 @@ void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep)
     cp.length = (U32) len;
     MemoryCopy(cp.data,SendBuf,len);
     len = cp.writeTo((U8 *) SendBuf, 0);
-    cp.F0 = 'X';
-    cp.F1 = '4';
-    cp.length = (U32) *imgLen;
-    MemoryCopy(cp.data, *imgData, *imgLen);
-    len = cp.writeTo((U8 *) SendBuf, len);
-
     udpPackage.len = len;
+    if (imgData!=0 && imgLen!=0)
+    {
+        cp.F0 = 'X';
+        cp.F1 = '4';
+        cp.length = (U32) imgLen;
+        MemoryCopy(cp.data, (void *) imgData, imgLen);
+        len = cp.writeTo((U8 *) SendBuf, len);
+    }
+    udpPackage.len += len;
     printf("\n%d\n",udp->Send(udpPackage));
 }

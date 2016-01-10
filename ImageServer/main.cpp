@@ -97,7 +97,7 @@ bool Init(int argc, char *argv[])
     else return false;
 
 
-    ioControl.Init(IP,rport,tport,&imgCompressData,&imgLength);
+    ioControl.Init(IP,rport,tport);
     ioControl.SetControlState(&state);
 
     return true;
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
         bs.setU8((U8) (rect.Height * 250 / height));
         itr_protocol::StandardExchangePackage sep(0x10);
         sep.data.assign(sendbuffer,sendbuffer+bs.getLength());
-        ioControl.SendData(sep);
+        ioControl.SendData(sep, (void *) imgCompressData, imgLength);
         log.log("send");
     }
     compress.Close();

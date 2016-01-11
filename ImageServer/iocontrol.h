@@ -18,12 +18,10 @@ public:
     ~IOControl();
 private:
 
-    class SSPSend;
-    class SSPReceive;
+    class SEPReceive;
     itr_system::Udp::UdpPackage udpPackage;
-    SSPSend* sendobj;
-    SSPReceive* receiveObj;
-    itr_protocol::StandSerialProtocol sspUdp;
+    SEPReceive* receiveObj;
+    itr_protocol::StandardExchangeProtocolSerial protocolSerial;
     itr_system::Udp* udp;
 
     U8** imgData;

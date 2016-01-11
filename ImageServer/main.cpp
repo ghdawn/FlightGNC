@@ -175,8 +175,8 @@ int main(int argc, char *argv[])
         bs.setU8(state);
         bs.setU8(0x1f);
         bs.setU8(50);
-        bs.setU16((U16) (rect.X * 10000 / width));
-        bs.setU16((U16) (rect.Y * 10000 / height));
+        bs.setU16((U16) ((rect.X+rect.Width/2) * 10000 / width));
+        bs.setU16((U16) ((rect.Y+rect.Height/2)* 10000 / height));
         bs.setU8((U8) (rect.Width * 250 / width));
         bs.setU8((U8) (rect.Height * 250 / height));
         itr_protocol::StandardExchangePackage sep(0x10);

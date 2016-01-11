@@ -6,87 +6,63 @@
 #include <itrbase.h>
 #include "iocontrol.h"
 
-class IOControl::SSPReceive : public itr_protocol::StandSerialProtocol::SSPDataRecFun
+class IOControl::SEPReceive : public itr_protocol::OnReceiveSEP
 {
 public:
     void SetControlState(eState *state)
     {
         this->state = state;
     }
-    void Do(itr_protocol::StandSerialProtocol *SSP, itr_protocol::StandSerialFrameStruct *SSFS, U8 *Package, S32 PackageLength)
+    S32 Do(const itr_protocol::StandardExchangePackage& sep)
     {
-        F32 *a, *b, *c, *d;
-        switch (Package[0])
+        switch (sep.keyword)
         {
-            case 0x41:
-                *state = (eState) Package[1];
-                break;
-            default:
+            case 0x11:
+                *state = (eState) sep.data[0];
                 break;
         }
     }
-
 public:
     eState *state;
 };
 
-class IOControl::SSPSend : public itr_protocol::StandSerialProtocol::SSPDataSendFun {
-public:
-    SSPSend(char* SendBuffer,const void** imgCompressData, int* imgLength)
-    {
-        sendbuf = SendBuffer;
-        img = imgCompressData;
-        this->imgLength = imgLength;
-    }
-    S32 Do(U8 *Buffer, S32 Length) {
-        memcpy(sendbuf, Buffer, Length);
-        memcpy(sendbuf + Length,  *img,*imgLength);
-        int SendLength = Length + *imgLength;
-        return SendLength;
-    }
-
-private:
-    const void** img;
-    int* imgLength;
-    char* sendbuf;
-};
 
 void IOControl::SetControlState(eState *state)
 {
-//    this->receiveObj->SetControlState(state);
-
+    this->receiveObj->SetControlState(state);
 }
 
 void IOControl::Init(string IP, int ReceivePort, int TransmitPort)
 {
     udp=new itr_system::Udp(ReceivePort,false);
-
+    receiveObj = new SEPReceive;
+    protocolSerial.AddReceiveFun(receiveObj);
     udpPackage.port = TransmitPort;
     udpPackage.IP = IP;
     udpPackage.pbuffer=SendBuf;
 }
 
 IOControl::~IOControl()
-
 {
     delete udp;
+    delete receiveObj;
 }
 
 void IOControl::CheckIncomingData()
 {
     int len;
     len = udp->Receive(RecBuf, MaxRecLength);
-    itr_protocol::StandardExchangeProtocolSerial protocolSerial;
     if(len>0)
     {
-        protocolSerial.processByte((U8 *) RecBuf,0, len);
+        int count = protocolSerial.ProcessByte((U8 *) RecBuf,0, len);
+        printf("receive : %d\n",count);
     }
 }
 
 void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep,void* imgData,int imgLen)
 {
     itr_protocol::StandardExchangeProtocolSerial protocolSerial;
-    int len = protocolSerial.fillBuffer(sep, (U8 *) SendBuf);
+    int len = protocolSerial.FillBuffer(sep, (U8 *) SendBuf);
     itr_protocol::ComboPackage cp;
     cp.F0 = 'E';
     cp.F1 = 'P';

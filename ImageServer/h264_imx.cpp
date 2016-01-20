@@ -226,3 +226,8 @@ void H264_imx::run(Context *ctx, U8 *data, U8 *compressed, int &length)
     free(output_block);
 
 }
+
+void H264_imx::Close()
+{
+    shutdown(ctx);
+}

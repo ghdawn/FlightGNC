@@ -40,7 +40,7 @@ public:
 
     void Compress(U8 *data, U8 *compressed, int &length);
     void SetQuality(int quality);
-
+    void Close();
 private:
     void run(Context *ctx, U8 *data, U8 *compressed, int &length);
     Context *ctx;

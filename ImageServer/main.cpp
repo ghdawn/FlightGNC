@@ -12,6 +12,7 @@ using namespace std;
 
 itr_device::ICamera *camera=NULL;
 itrx264::ix264 compress;
+H264_imx h264_imx;
 IOControl ioControl;
 const void *imgCompressData;
 int imgLength;
@@ -94,6 +95,7 @@ bool Init(int argc, char *argv[])
         camera->Open(cameraID, width, height, 2);
         camera->SetTunnel(cameraTunnel);
         compress.Open(width, height, fps);
+        h264_imx.Open(width,height,fps);
     }
     else return false;
 
@@ -141,6 +143,8 @@ int main(int argc, char *argv[])
         data[2]=pic+size+size/4;
         data[3]=NULL;
         compress.Compress(data, stride,&imgCompressData , &imgLength);
+        U8 compressData[65535];
+        h264_imx.Compress(pic, compressData, imgLength);
         log.log("x264");
         if (state != TRACK)
         {
@@ -183,10 +187,11 @@ int main(int argc, char *argv[])
         itr_protocol::StandardExchangePackage sep(0x10);
         sep.setSID(0x05);
         sep.data.assign(sendbuffer,sendbuffer+bs.getLength());
-        ioControl.SendData(sep, (void *) imgCompressData, imgLength);
+        ioControl.SendData(sep, compressData, imgLength);
         log.log("send");
     }
     compress.Close();
+    h264_imx.Close();
     camera->Close();
     delete pic;
     delete camera;

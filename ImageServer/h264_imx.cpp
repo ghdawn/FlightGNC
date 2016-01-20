@@ -3,8 +3,10 @@
 //
 
 #include "h264_imx.h"
+#include "stdlib.h"
+#include "string.h"
 
-void H264_imx::*acquire_output_buffer(void *context, size_t size, void **acquired_handle)
+void* acquire_output_buffer(void *context, size_t size, void **acquired_handle)
 {
     void *mem;
 
@@ -17,7 +19,7 @@ void H264_imx::*acquire_output_buffer(void *context, size_t size, void **acquire
     return mem;
 }
 
-void H264_imx::finish_output_buffer(void *context, void *acquired_handle)
+void finish_output_buffer(void *context, void *acquired_handle)
 {
     ((void) (context));
 
@@ -25,7 +27,7 @@ void H264_imx::finish_output_buffer(void *context, void *acquired_handle)
     fprintf(stderr, "finished output buffer, handle %p", acquired_handle);
 }
 
-void H264_imx::shutdown(Context *ctx)
+void shutdown(Context *ctx)
 {
     unsigned int i;
 
@@ -46,13 +48,13 @@ void H264_imx::shutdown(Context *ctx)
     free(ctx);
 }
 
-Context *H264_imx::init(int width, int height, int fps)
+Context* init(int width, int height, int fps)
 {
     Context *ctx;
     ImxVpuEncOpenParams open_params;
     unsigned int i;
 
-    ctx = calloc(1, sizeof(Context));
+    ctx = (Context*)calloc(1, sizeof(Context));
 
     /* Set the open params. Use the default values (note that memset must still
      * be called to ensure all values are set to 0 initially; the

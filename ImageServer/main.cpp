@@ -4,6 +4,7 @@
 #include "itrvision.h"
 #include "itrsystem.h"
 #include "ix264.h"
+#include "h264_imx.h"
 #include "config.h"
 #include "iocontrol.h"
 

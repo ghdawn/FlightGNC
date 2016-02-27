@@ -79,5 +79,5 @@ void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep,void* 
         len = cp.writeTo((U8 *) SendBuf, len);
     }
     udpPackage.len += len;
-    printf("\n%d\n",udp->Send(udpPackage));
+    printf("%d\n",udp->Send(udpPackage));
 }

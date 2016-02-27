@@ -129,6 +129,7 @@ int main(int argc, char *argv[])
     log.enableTime();
     while (state != EXIT)
     {
+		printf("========Begin=======\n");
         tc.Tick();
         ioControl.CheckIncomingData();
         printf("State:%d\n",state);
@@ -201,6 +202,7 @@ int main(int argc, char *argv[])
         sep.data.assign(sendbuffer,sendbuffer+bs.getLength());
         ioControl.SendData(sep, compressData, imgLength);
         log.log("send");
+		printf("========End=======\n\n");
     }
     compress.Close();
     h264_imx.Close();

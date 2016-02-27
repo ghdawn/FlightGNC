@@ -96,6 +96,7 @@ bool Init(int argc, char *argv[])
         camera->SetTunnel(cameraTunnel);
         compress.Open(width, height, fps);
         h264_imx.Open(width,height,fps);
+		h264_imx.SetQuality(15);
     }
     else return false;
 
@@ -142,10 +143,13 @@ int main(int argc, char *argv[])
         data[1]=pic+size;
         data[2]=pic+size+size/4;
         data[3]=NULL;
-        compress.Compress(data, stride,&imgCompressData , &imgLength);
+        ////compress.Compress(data, stride,&imgCompressData , &imgLength);
         U8 compressData[65535];
         h264_imx.Compress(pic, compressData, imgLength);
         log.log("x264");
+			S32* pimg = (S32*)img.GetData();
+			itr_vision::ColorConvert::yuv420p2rgb(pimg,pic,width,height);
+		log.log("yuv2rgb");
         if (state != TRACK)
         {
             if (meanShift!=NULL)
@@ -156,23 +160,31 @@ int main(int argc, char *argv[])
         }
         if (state == TRACK)
         {
-            for (int i = 0; i < height; ++i)
-            {
-                for (int j = 0; j < width; ++j)
-                {
-                    img(i,j)=pic[i*width+j];
-                }
-            }
+			for(int i=0;i<height;i++)
+			{
+				for(int j=0;j<width;j++)
+				{
+					U8 r,g,b;
+					r = (*pimg&0xff0000)>>16;
+					g = (*pimg&0xff00)>>8;
+					b = (*pimg&0xff);
+					int a =((r&0xf0)<<4)|((g&0xf0))|((b&0xf0)>>4);
+					img(i,j) = a;
+					pimg++;
+				}
+
+			}
             if(meanShift!=NULL)
             {
                 meanShift->Go(img,rect);
+				printf("%f %f\n",rect.X,rect.Y);
             }
             else
             {
                 meanShift = new itr_vision::MeanShift;
                 rect.X = 140;
                 rect.Y = 100;
-                meanShift->Init(img,rect,itr_vision::MeanShift::IMG_GRAY);
+                meanShift->Init(img,rect,itr_vision::MeanShift::IMG_RGB);
             }
         }
         log.log("track");

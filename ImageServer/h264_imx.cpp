@@ -15,7 +15,6 @@ void* acquire_output_buffer(void *context, size_t size, void **acquired_handle)
     /* In this example, "acquire" a buffer by simply allocating it with malloc() */
     mem = malloc(size);
     *acquired_handle = mem;
-    fprintf(stderr, "acquired output buffer, handle %p", *acquired_handle);
     return mem;
 }
 
@@ -24,7 +23,6 @@ void finish_output_buffer(void *context, void *acquired_handle)
     ((void) (context));
 
     /* Nothing needs to be done here in this example. Just log this call. */
-    fprintf(stderr, "finished output buffer, handle %p", acquired_handle);
 }
 
 void shutdown(Context *ctx)

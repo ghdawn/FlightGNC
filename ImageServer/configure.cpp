@@ -131,15 +131,15 @@ string Configure::ToString()
     strstream << " -rport ";
     strstream << receivePort;
     strstream << " -trackres ";
-    strstream << width;
+    strstream << width<<' ';
     strstream << height;
-    strstream << "-encoderres";
-    strstream << encoderWidth;
+    strstream << " -encoderres ";
+    strstream << encoderWidth<<' ';
     strstream << encoderHeight;
-    strstream << "-cameraid";
-    strstream << cameraID;
+    strstream << " -cameraid ";
+    strstream << cameraID<<' ';
     strstream << cameraTunnel;
-    strstream << "-fps";
+    strstream << " -fps ";
     strstream << fps;
     return strstream.str();
 }
@@ -147,10 +147,11 @@ string Configure::ToString()
 void Configure::SetIP(U32 ip)
 {
     stringstream str;
-    str<<(ip>>24)<<".";
-    str<<((ip&0xff0000)>>16)<<".";
-    str<<((ip&0xff00)>>8)<<".";
-    str<<((ip&0xff))<<".";
+	U8* ptr = (U8*)&ip;
+    str<<*(ptr+3)<<".";
+    str<<*(ptr+2)<<".";
+    str<<*(ptr+1)<<".";
+    str<<*(ptr+0)<<".";
 }
 
 

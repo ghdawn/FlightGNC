@@ -43,6 +43,7 @@ bool Init(int argc, char *argv[])
     else return false;
 
     ioControl.Init(config.IP,config.receivePort,config.transmitPort);
+	ioControl.SetConfigure(&config);
     ioControl.SetControlState(&state);
 
     return true;
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
         }
         camera->FetchFrame(pic,size*3/2,NULL);
         float fps = 1000.0f/tcFre.Tick();
+        tcDelay.Tick();
         log.log("get image");
         h264_imx.Compress(pic, compressData, imgLength);
         log.log("x264");
@@ -136,14 +138,17 @@ int main(int argc, char *argv[])
             else
             {
                 meanShift = new itr_vision::MeanShift;
-                rect.X = config.targetx;
-                rect.Y = config.targety;
-                rect.Width = config.targetWidth;
-                rect.Height = config.targetHeight;
                 meanShift->Init(img, rect, itr_vision::MeanShift::IMG_RGB);
             }
 
         }
+		else
+		{
+                rect.X = config.targetx;
+                rect.Y = config.targety;
+                rect.Width = config.targetWidth;
+                rect.Height = config.targetHeight;
+		}
         log.log("track");
         itr_container::ByteStream bs((void *) sendbuffer);
         bs.setU8(state);

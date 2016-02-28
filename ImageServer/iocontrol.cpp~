@@ -6,8 +6,6 @@
 #include <itrbase.h>
 #include "iocontrol.h"
 #include "configure.h"
-#include <fstream>
-using namespace std;
 
 class IOControl::SEPReceive : public itr_protocol::OnReceiveSEP
 {
@@ -41,8 +39,8 @@ public:
                 itr_container::ByteStream bs((void *) &sep.data[0]);
                 configure->targetx += bs.getS16() * configure->width / 10000;
                 configure->targety += bs.getS16() * configure->height / 10000;
-                configure->targetWidth += bs.getS8() * configure->width / 100;
-                configure->targetHeight += bs.getS8() * configure->width / 100;
+                configure->targetWidth += bs.getS8() * configure->width / 250;
+                configure->targetHeight += bs.getS8() * configure->width / 250;
             }
                 break;
             case 0x14:
@@ -56,12 +54,9 @@ public:
                 configure->height = bs.getU16();
                 configure->cameraID = bs.getU8();
                 configure->cameraTunnel = bs.getU8();
-                configure->receivePort = bs.getU16();
+                configure->receivePort = bs.getU8();
                 configure->SetIP(bs.getU32());
-                configure->transmitPort = bs.getU16();
-				ofstream fout("config");
-				fout<<configure->ToString()<<endl;
-				fout.close();
+                configure->transmitPort = bs.getU8();
             }
                 break;
         }
@@ -75,10 +70,6 @@ public:
 void IOControl::SetControlState(eState *state)
 {
     this->receiveObj->SetControlState(state);
-}
-void IOControl::SetConfigure(Configure *conf)
-{
-	this->receiveObj->SetConfigure(conf);
 }
 
 void IOControl::Init(string IP, int ReceivePort, int TransmitPort)

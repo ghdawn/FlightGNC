@@ -69,10 +69,6 @@ void MainWindow::processRecData(char* buffer, int length)
                 imgbuffer[4*k+1]=frame->data[0][(i+j*352)];
                 imgbuffer[4*k+2]=frame->data[0][(i+j*352)];
                 imgbuffer[4*k+3]=frame->data[0][(i+j*352)];
-                //                imgbuffer[4*k  ]=*p++;
-                //                imgbuffer[4*k+1]=*p++;
-                //                imgbuffer[4*k+2]=*p++;
-                //                imgbuffer[4*k+3]=*p++;
                 k++;
             }
         ui->imagewidget->update();

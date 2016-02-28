@@ -3,7 +3,7 @@ project(ImageServer)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 
-set(SOURCE_FILES main.cpp iocontrol.cpp h264_imx.cpp iocontrol.h config.h)
+set(SOURCE_FILES main.cpp iocontrol.cpp configure.cpp h264_imx.cpp)
 add_executable(ImageServer ${SOURCE_FILES})
 
 target_link_libraries( ImageServer "${ImageServer_SOURCE_DIR}/../../iTRLib/itrbase/bin/debug/libitrbase.a" )

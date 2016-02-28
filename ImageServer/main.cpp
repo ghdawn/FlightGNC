@@ -1,11 +1,12 @@
 #include <iostream>
+#include <fstream>
 #include "itrbase.h"
 #include "itrdevice.h"
 #include "itrvision.h"
 #include "itrsystem.h"
 #include "ix264.h"
 #include "h264_imx.h"
-#include "config.h"
+#include "configure.h"
 #include "iocontrol.h"
 
 using namespace std;
@@ -14,94 +15,34 @@ itr_device::ICamera *camera=NULL;
 itrx264::ix264 compress;
 H264_imx h264_imx;
 IOControl ioControl;
-const void *imgCompressData;
 int imgLength;
-S32 width, height;
-
+U8 compressData[MaxSendLength];
+Configure config;
 eState state=CAPTURE;
 bool Init(int argc, char *argv[])
 {
     itr_math::MathObjStandInit();
-    const int npara=17;
-    string IP;
-    S32 cameraTunnel=0;
-    U32 cameraID = 0;
-    S32 tport=0,rport=0;
-    F32 fps=0;
-    if (argc < npara)
+    if (argc > 1)
     {
-        printf("Help!\n");
-        return false;
+        config.Parse(argc, argv);
     }
     else
     {
-        for (int i = 1; i < argc;)
-        {
-            if (argv[i][0] == '-')
-            {
-                if (strcmp(argv[i], "-ip") == 0)
-                {
-                    IP = argv[i + 1];
-                    i += 2;
-                }
-                else if (strcmp(argv[i], "-tport") == 0)
-                {
-                    sscanf(argv[i + 1], "%d", &tport);
-                    i+=2;
-                }
-                else if (strcmp(argv[i], "-rport") == 0)
-                {
-                    sscanf(argv[i + 1], "%d", &rport);
-                    i+=2;
-                }
-                else if (strcmp(argv[i], "-res") == 0)
-                {
-                    sscanf(argv[i + 1], "%d", &width);
-                    sscanf(argv[i + 2], "%d", &height);
-                    i += 3;
-                }
-                else if (strcmp(argv[i], "-cameraid") == 0)
-                {
-                    sscanf(argv[i+1], "%d",&cameraID);
-                    sscanf(argv[i+2], "%d",&cameraTunnel);
-                    i+=3;
-                }
-                else if (strcmp(argv[i], "-cameratype") == 0)
-                {
-                    if(strcmp(argv[i+1],"v4l2")==0)
-                    {
-                        camera=new itr_device::v4linux;
-                    }
-                    else if(strcmp(argv[i+1],"asi")==0)
-                    {
-                        //camera=new itr_device::AsiCamera;
-                    }
-                    i+=2;
-                }
-                else if (strcmp(argv[i], "-fps") == 0)
-                {
-                    sscanf(argv[i+1], "%f",&fps);
-                    i+=2;
-                }
-                else
-                {
-                    i++;
-                }
-            }
-        }
+        ifstream fin("config");
+        string str;
+        getline(fin,str);
+        config.Parse(str);
     }
     if (camera!=NULL)
     {
-        camera->Open(cameraID, width, height, 2);
-        camera->SetTunnel(cameraTunnel);
-        compress.Open(width, height, fps);
-        h264_imx.Open(width,height,fps);
-		h264_imx.SetQuality(15);
+        camera->Open(config.cameraID, config.encoderWidth, config.encoderHeight, 2);
+        camera->SetTunnel(config.cameraTunnel);
+        h264_imx.Open(config.encoderWidth, config.encoderHeight,config.fps);
+		h264_imx.SetQuality(config.encoderQuality);
     }
     else return false;
 
-
-    ioControl.Init(IP,rport,tport);
+    ioControl.Init(config.IP,config.receivePort,config.transmitPort);
     ioControl.SetControlState(&state);
 
     return true;
@@ -110,27 +51,21 @@ bool Init(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     Init(argc, argv);
-    U8 *data[4];
-    S32 stride[4];
-
-    stride[0]=width;
-    stride[1]=width/2;
-    stride[2]=width/2;
-    stride[3]=0;
-    int size=width*height;
+    int size=config.width*config.height;
     U8* pic=new U8[size*3/2];
-    U8 sendbuffer[18];
+    U8 sendbuffer[20];
     itr_vision::MeanShift *meanShift=NULL;
-    Matrix img(height,width);
-    RectangleF rect(140,100,40,40);
-    TimeClock tc;
+    Matrix img_origin(config.encoderHeight,config.encoderWidth);
+    Matrix img(config.height,config.width);
+    RectangleF rect(config.targetx,config.targety,config.targetWidth,config.targetHeight);
+    TimeClock tcDelay,tcFre;
+    U16 counter = 0;
     Log log;
     log.enablePrint();
     log.enableTime();
     while (state != EXIT)
     {
 		printf("========Begin=======\n");
-        tc.Tick();
         ioControl.CheckIncomingData();
         printf("State:%d\n",state);
         if( state == IDLE)
@@ -139,18 +74,11 @@ int main(int argc, char *argv[])
             continue;
         }
         camera->FetchFrame(pic,size*3/2,NULL);
+        float fps = 1000.0f/tcFre.Tick();
         log.log("get image");
-        data[0]=pic;
-        data[1]=pic+size;
-        data[2]=pic+size+size/4;
-        data[3]=NULL;
-        ////compress.Compress(data, stride,&imgCompressData , &imgLength);
-        U8 compressData[65535];
         h264_imx.Compress(pic, compressData, imgLength);
         log.log("x264");
-			S32* pimg = (S32*)img.GetData();
-			itr_vision::ColorConvert::yuv420p2rgb(pimg,pic,width,height);
-		log.log("yuv2rgb");
+        const U8 OPTBIT = 0x1f;
         if (state != TRACK)
         {
             if (meanShift!=NULL)
@@ -161,42 +89,76 @@ int main(int argc, char *argv[])
         }
         if (state == TRACK)
         {
-			for(int i=0;i<height;i++)
-			{
-				for(int j=0;j<width;j++)
-				{
-					U8 r,g,b;
-					r = (*pimg&0xff0000)>>16;
-					g = (*pimg&0xff00)>>8;
-					b = (*pimg&0xff);
-					int a =((r&0xf0)<<4)|((g&0xf0))|((b&0xf0)>>4);
-					img(i,j) = a;
-					pimg++;
-				}
-
-			}
-            if(meanShift!=NULL)
+            S32 *pimg = (S32 *) img_origin.GetData();
+            itr_vision::ColorConvert::yuv420p2rgb(pimg, pic, config.width, config.height);
+            itr_vision::Scale::SubSampling(img_origin, img, config.encoderWidth / config.width);
+            log.log("yuv2rgb");
+            pimg = (S32 *) img.GetData();
+            for (int i = 0; i < config.height; i++)
             {
-                meanShift->Go(img,rect);
-				printf("%f %f\n",rect.X,rect.Y);
+                for (int j = 0; j < config.width; j++)
+                {
+                    U8 r, g, b;
+                    r = (U8) ((*pimg & 0xff0000) >> 16);
+                    g = (U8) ((*pimg & 0xff00) >> 8);
+                    b = (U8) (*pimg & 0xff);
+                    int a = ((r & 0xf0) << 4) | ((g & 0xf0)) | ((b & 0xf0) >> 4);
+                    img(i, j) = a;
+                    pimg++;
+                }
+            }
+            if (meanShift != NULL)
+            {
+                meanShift->Go(img, rect);
+                printf("%f %f\n", rect.X, rect.Y);
+                config.confidence = 80;
+                if(rect.X<0)
+                {
+                    rect.X = 0;
+                    config.confidence = 0;
+                }
+                else if(rect.X>config.width)
+                {
+                    rect.X = config.width;
+                    config.confidence = 0;
+                }
+                if(rect.Y<0)
+                {
+                    rect.Y = 0;
+                    config.confidence = 0;
+                }
+                else if(rect.Y>config.height)
+                {
+                    rect.Y = config.height;
+                    config.confidence = 0;
+                }
             }
             else
             {
                 meanShift = new itr_vision::MeanShift;
-                rect.X = 140;
-                rect.Y = 100;
-                meanShift->Init(img,rect,itr_vision::MeanShift::IMG_RGB);
+                rect.X = config.targetx;
+                rect.Y = config.targety;
+                rect.Width = config.targetWidth;
+                rect.Height = config.targetHeight;
+                meanShift->Init(img, rect, itr_vision::MeanShift::IMG_RGB);
             }
+
         }
         log.log("track");
         itr_container::ByteStream bs((void *) sendbuffer);
         bs.setU8(state);
-        bs.setU8(0x1f);
-        bs.setU8(50);
-        bs.setU16((U16) ((rect.X+rect.Width/2) * 10000 / width));
-        bs.setU16((U16) ((rect.Y+rect.Height/2)* 10000 / height));
-        bs.setU8((U8) (rect.Width * 250 / width));
-        bs.setU8((U8) (rect.Height * 250 / height));
+        bs.setU8(OPTBIT | config.userOptBit);
+        bs.setU8((U8) config.confidence);
+        bs.setU16((U16) ((rect.X+rect.Width/2) * 10000 / config.width));
+        bs.setU16((U16) ((rect.Y+rect.Height/2)* 10000 / config.height));
+        bs.setU8((U8) (rect.Width * 250 / config.width));
+        bs.setU8((U8) (rect.Height * 250 / config.height));
+        if(config.userOptBit & (1<<5))
+            bs.setU16(counter++);
+        if(config.userOptBit & (1<<6))
+            bs.setU8((U8) (5 * fps));
+        if(config.userOptBit & (1<<7))
+            bs.setU8((U8) tcDelay.Tick());
         itr_protocol::StandardExchangePackage sep(0x10);
         sep.setSID(0x05);
         sep.data.assign(sendbuffer,sendbuffer+bs.getLength());

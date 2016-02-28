@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(ImageServer)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fpermissive")
 
 set(SOURCE_FILES main.cpp iocontrol.cpp configure.cpp h264_imx.cpp)
 add_executable(ImageServer ${SOURCE_FILES})

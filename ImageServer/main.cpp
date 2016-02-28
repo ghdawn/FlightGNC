@@ -11,7 +11,7 @@
 
 using namespace std;
 
-itr_device::ICamera *camera=NULL;
+itr_device::ICamera *camera=new itr_device::v4linux;
 itrx264::ix264 compress;
 H264_imx h264_imx;
 IOControl ioControl;

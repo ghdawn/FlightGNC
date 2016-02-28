@@ -91,7 +91,6 @@ IOControl::~IOControl()
 void IOControl::CheckIncomingData()
 {
     int len;
-    len = udp->Receive(RecBuf, MaxRecLength);
     int count = 0;
     while (1)
     {

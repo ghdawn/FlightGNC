@@ -5,7 +5,7 @@
 #ifndef IMAGESERVER_IOCONTROL_H
 #define IMAGESERVER_IOCONTROL_H
 
-#include "config.h"
+#include "configure.h"
 
 
 class IOControl

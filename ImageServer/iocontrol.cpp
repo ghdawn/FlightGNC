@@ -22,6 +22,9 @@ public:
     }
     S32 Do(const itr_protocol::StandardExchangePackage& sep)
     {
+		if (sep.getTID()!= 5)
+			return 0;
+
         switch (sep.keyword)
         {
             case 0x11:
@@ -65,6 +68,7 @@ public:
             }
                 break;
         }
+		return 0;
     }
 public:
     eState *state;

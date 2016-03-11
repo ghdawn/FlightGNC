@@ -64,6 +64,25 @@ int main(int argc, char *argv[])
     Log log;
     log.enablePrint();
     log.enableTime();
+
+    KalmanFilter kf;
+    kf.Init(4);
+    F32 data[24]= {1,0,1,0,
+                   0,1,0,1,
+                   0,0,1,0,
+                   0,0,0,1,
+                   1,0,0,0,
+                   0,1,0,0
+    };
+    kf.F_x.CopyFrom(data);
+    kf.F_n.SetDiag(1);
+
+    Matrix H(2, 4), R(2, 2), Q(4, 4);
+    H.CopyFrom(data+16);
+    Q.SetDiag(0);
+    R.SetDiag(0.2);
+    Vector z(2), X(4), n(4);
+
     while (state != EXIT)
     {
 		printf("========Begin=======\n");
@@ -112,6 +131,12 @@ int main(int argc, char *argv[])
             if (meanShift != NULL)
             {
                 meanShift->Go(img, rect);
+                z[0]=rect.X;
+                z[1]=rect.Y;
+                X=kf.UpdateModel(Q,n);
+                X = kf.UpdateMeasure(H, R, z);
+                rect.X=X[0];
+                rect.Y=X[1];
                 printf("%f %f\n", rect.X, rect.Y);
                 config.confidence = 80;
                 if(rect.X<0)
@@ -139,6 +164,10 @@ int main(int argc, char *argv[])
             {
                 meanShift = new itr_vision::MeanShift;
                 meanShift->Init(img, rect, itr_vision::MeanShift::IMG_RGB);
+                kf.x[0]=rect.X;
+                kf.x[1]=rect.Y;
+                kf.x[2]=0;
+                kf.x[3]=0;
             }
 
         }

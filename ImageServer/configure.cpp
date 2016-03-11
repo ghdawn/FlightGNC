@@ -66,6 +66,10 @@ void Configure::Parse(string conf)
         {
             strstream >> fps;
         }
+        else if(str == "-quality")
+        {
+            strstream >> encoderQuality;
+        }
     }
 }
 
@@ -141,6 +145,8 @@ string Configure::ToString()
     strstream << cameraTunnel;
     strstream << " -fps ";
     strstream << fps;
+    strstream << " -quality ";
+    strstream << encoderQuality;
     return strstream.str();
 }
 

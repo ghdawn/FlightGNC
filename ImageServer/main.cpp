@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
         const U8 OPTBIT = 0x1f;
         if (state != TRACK)
         {
+            config.confidence = 0;
             if (meanShift!=NULL)
             {
                 delete meanShift;
@@ -142,22 +143,22 @@ int main(int argc, char *argv[])
                 if(rect.X<0)
                 {
                     rect.X = 0;
-                    config.confidence = 0;
+                    config.confidence = 1;
                 }
                 else if(rect.X>config.width)
                 {
                     rect.X = config.width;
-                    config.confidence = 0;
+                    config.confidence = 1;
                 }
                 if(rect.Y<0)
                 {
                     rect.Y = 0;
-                    config.confidence = 0;
+                    config.confidence = 1;
                 }
                 else if(rect.Y>config.height)
                 {
                     rect.Y = config.height;
-                    config.confidence = 0;
+                    config.confidence = 1;
                 }
             }
             else

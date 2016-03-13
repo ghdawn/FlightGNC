@@ -31,7 +31,7 @@ public:
     U32 cameraID,cameraTunnel;
     int fps;
     U8 userOptBit;
-    U8 encoderQuality;
+    int encoderQuality;
     int targetHeight;
     int targetWidth;
     int targetx;

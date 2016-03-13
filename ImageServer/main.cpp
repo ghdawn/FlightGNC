@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
 
     Matrix H(2, 4), R(2, 2), Q(4, 4);
     H.CopyFrom(data+16);
-    Q.SetDiag(0);
-    R.SetDiag(0.2);
+    Q.SetDiag(3.0);
+    R.SetDiag(12.0);
     Vector z(2), X(4), n(4);
 
     while (state != EXIT)

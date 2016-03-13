@@ -7,6 +7,7 @@ set(SOURCE_FILES main.cpp iocontrol.cpp configure.cpp h264_imx.cpp)
 add_executable(ImageServer ${SOURCE_FILES})
 
 target_link_libraries( ImageServer "${ImageServer_SOURCE_DIR}/../../iTRLib/itrbase/bin/debug/libitrbase.a" )
+target_link_libraries( ImageServer "${ImageServer_SOURCE_DIR}/../../iTRLib/itralgorithm/bin/debug/libitralgorithm.a" )
 target_link_libraries( ImageServer "${ImageServer_SOURCE_DIR}/../../iTRLib/itrvision/bin/debug/libitrvision.a" )
 target_link_libraries( ImageServer "${ImageServer_SOURCE_DIR}/../../iTRLib/itrsystem/bin/debug/libitrsystem.a" )
 target_link_libraries( ImageServer "${ImageServer_SOURCE_DIR}/../../iTRLib/itrdevice/bin/debug/libitrdevice.a" )

@@ -7,10 +7,6 @@
 #include "itrbase.h"
 #include "imxvpuapi/imxvpuapi.h"
 
-void *acquire_output_buffer(void *context, size_t size, void **acquired_handle);
-
-void finish_output_buffer(void *context, void *acquired_handle);
-
 typedef struct _Context
 {
     ImxVpuEncoder *vpuenc;

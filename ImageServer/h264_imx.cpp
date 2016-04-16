@@ -46,6 +46,7 @@ void shutdown(Context *ctx)
     free(ctx);
 }
 
+ImxVpuEncodedFrame output_frame;
 Context* init(int width, int height, int fps)
 {
     Context *ctx;
@@ -63,12 +64,16 @@ Context* init(int width, int height, int fps)
      * and denominator. */
     memset(&open_params, 0, sizeof(open_params));
     imx_vpu_enc_set_default_open_params(IMX_VPU_CODEC_FORMAT_H264, &open_params);
-    open_params.bitrate = 0;
+    open_params.bitrate = 4000;
     open_params.frame_width = width;
     open_params.frame_height = height;
     open_params.frame_rate_numerator = fps;
     open_params.frame_rate_denominator = 1;
 
+
+    /* Set up the output frame. Simply setting all fields to zero/NULL
+     * is enough. The encoder will fill in data. */
+    memset(&output_frame, 0, sizeof(output_frame));
 
     /* Load the VPU firmware */
     imx_vpu_enc_load();
@@ -168,7 +173,6 @@ void H264_imx::SetQuality(int quality)
 void H264_imx::run(Context *ctx, U8 *data, U8 *compressed, int &length)
 {
     ImxVpuRawFrame input_frame;
-    ImxVpuEncodedFrame output_frame;
     ImxVpuEncParams enc_params;
     unsigned int output_code;
 
@@ -183,14 +187,12 @@ void H264_imx::run(Context *ctx, U8 *data, U8 *compressed, int &length)
      * (The range in h.264 is 0-51, where 0 is best quality and worst
      * compression, and 51 vice versa.) */
     memset(&enc_params, 0, sizeof(enc_params));
+    enc_params.force_I_frame = 0;
     enc_params.quant_param = quality;
     enc_params.acquire_output_buffer = acquire_output_buffer;
     enc_params.finish_output_buffer = finish_output_buffer;
     enc_params.output_buffer_context = NULL;
 
-    /* Set up the output frame. Simply setting all fields to zero/NULL
-     * is enough. The encoder will fill in data. */
-    memset(&output_frame, 0, sizeof(output_frame));
 
     /* Read input i420 frames and encode them until the end of the input file is reached */
 
@@ -222,6 +224,8 @@ void H264_imx::run(Context *ctx, U8 *data, U8 *compressed, int &length)
     length = output_frame.data_size;
     memcpy(compressed, output_block, length);
     free(output_block);
+    printf("para: %d %d\n",enc_params.force_I_frame, enc_params.quant_param = quality);
+    printf("para: %d\n",output_frame.frame_type);
 
 }
 

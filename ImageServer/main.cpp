@@ -19,6 +19,7 @@ int imgLength;
 U8 compressData[MaxSendLength];
 Configure config;
 eState state=CAPTURE;
+
 bool Init(int argc, char *argv[])
 {
     itr_math::MathObjStandInit();
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
     U8* pic=new U8[size*3/2];
     U8 sendbuffer[20];
     itr_vision::MeanShift *meanShift=NULL;
-    Matrix img_origin(config.encoderHeight,config.encoderWidth);
+
     Matrix img(config.height,config.width);
     RectangleF rect(config.targetx,config.targety,config.targetWidth,config.targetHeight);
     TimeClock tcDelay,tcFre;
@@ -111,24 +112,7 @@ int main(int argc, char *argv[])
         }
         if (state == TRACK)
         {
-            S32 *pimg = (S32 *) img_origin.GetData();
-            itr_vision::ColorConvert::yuv420p2rgb(pimg, pic, config.width, config.height);
-            itr_vision::Scale::SubSampling(img_origin, img, config.encoderWidth / config.width);
-            log.log("yuv2rgb");
-            pimg = (S32 *) img.GetData();
-            for (int i = 0; i < config.height; i++)
-            {
-                for (int j = 0; j < config.width; j++)
-                {
-                    U8 r, g, b;
-                    r = (U8) ((*pimg & 0xff0000) >> 16);
-                    g = (U8) ((*pimg & 0xff00) >> 8);
-                    b = (U8) (*pimg & 0xff);
-                    int a = ((r & 0xf0) << 4) | ((g & 0xf0)) | ((b & 0xf0) >> 4);
-                    img(i, j) = a;
-                    pimg++;
-                }
-            }
+            meanShift->ChangeFormat(pic, img);
             if (meanShift != NULL)
             {
                 meanShift->Go(img, rect);
@@ -209,3 +193,5 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+

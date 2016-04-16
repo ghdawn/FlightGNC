@@ -7,6 +7,10 @@
 #include "iocontrol.h"
 #include "configure.h"
 #include <fstream>
+#include <sys/mman.h>
+#include <bits/fcntl-linux.h>
+#include <fcntl.h>
+
 using namespace std;
 
 class IOControl::SEPReceive : public itr_protocol::OnReceiveSEP
@@ -135,5 +139,30 @@ void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep,void* 
         len = cp.writeTo((U8 *) SendBuf, len);
     }
     udpPackage.len += len;
+
+    const char *filepath = "dev/shm/SPRepeaterLite_ShareFile";
+    int fd;
+    if ((fd = open(filepath, O_CREAT | O_RDWR, (mode_t)00700)) == -1)
+    {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    char* data = (char *) mmap(NULL, 32, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+    if (data == MAP_FAILED)
+    {
+        perror("mmap");
+        exit(EXIT_FAILURE);
+    }
+    int *length= (int *) data;
+    if(*length == 0)
+    {
+        MemoryCopy(data+4,udpPackage.pbuffer,udpPackage.len);
+        *length = udpPackage.len;
+    }
+    else
+    {
+        perror("Skip one frame");
+    }
     printf("%d\n",udp->Send(udpPackage));
 }

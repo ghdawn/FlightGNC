@@ -68,6 +68,7 @@ public:
 				ofstream fout("config");
 				fout<<configure->ToString()<<endl;
 				fout.close();
+                *state = EXIT;
             }
                 break;
         }

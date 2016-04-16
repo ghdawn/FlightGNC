@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
             S32 *pimgI = (S32 *) img_origin.GetData();
             itr_vision::ColorConvert::yuv420p2rgb(pimgI, pic, config.encoderWidth, config.encoderHeight);
-            itr_vision::Scale::SubSampling(img_origin, img, img.GetCol()/config.encoderWidth );
+            itr_vision::Scale::SubSampling(img_origin, img,config.encoderWidth/config.width);
             meanShift->ChangeFormat(img);
             if (meanShift != NULL)
             {

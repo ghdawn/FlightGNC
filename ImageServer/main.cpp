@@ -53,13 +53,13 @@ bool Init(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     Init(argc, argv);
-    int size=config.width*config.height;
+    int size=config.encoderWidth*config.encoderHeight;
     U8* pic=new U8[size*3/2];
     U8 sendbuffer[20];
     itr_vision::MeanShift *meanShift=NULL;
 
     Matrix img(config.height,config.width);
-    RectangleF rect(config.targetx,config.targety,config.targetWidth,config.targetHeight);
+    RectangleF rect(config.targetx-config.targetWidth/2,config.targety-config.targetHeight/2,config.targetWidth,config.targetHeight);
     TimeClock tcDelay,tcFre;
     U16 counter = 0;
     Log log;
@@ -112,7 +112,11 @@ int main(int argc, char *argv[])
         }
         if (state == TRACK)
         {
-            meanShift->ChangeFormat(pic, img);
+            Matrix img_origin(encoderheight, encoderwidth);
+            S32 *pimgI = (S32 *) img_origin.GetData();
+            itr_vision::ColorConvert::yuv420p2rgb(pimgI, pic, encoderwidth, encoderheight);
+            itr_vision::Scale::SubSampling(img_origin, img, img.GetCol()/encoderwidth );
+            meanShift->ChangeFormat(pic, img,config.encoderWidth,config.encoderHeight);
             if (meanShift != NULL)
             {
                 meanShift->Go(img, rect);
@@ -158,10 +162,11 @@ int main(int argc, char *argv[])
         }
 		else
 		{
-                rect.X = config.targetx;
-                rect.Y = config.targety;
+                rect.X = config.targetx - config.targetWidth/2;
+                rect.Y = config.targety - config.targetHeight/2;
                 rect.Width = config.targetWidth;
                 rect.Height = config.targetHeight;
+                printf("%f %f %f %f\n",rect.X,rect.Y,rect.Width,rect.Height);
 		}
         log.log("track");
         itr_container::ByteStream bs((void *) sendbuffer);

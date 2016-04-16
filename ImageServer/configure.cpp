@@ -23,8 +23,8 @@ Configure::Configure()
     this->transmitPort = 9032;
     this->userOptBit = 0x1f;
     this->encoderQuality = 10;
-    this->targetx = 140;
-    this->targety = 100;
+    this->targetx = 160;
+    this->targety = 120;
     this->targetWidth = 40;
     this->targetHeight = 40;
     this->confidence = 0;
@@ -51,6 +51,8 @@ void Configure::Parse(string conf)
         {
             strstream >> width;
             strstream >> height;
+            targetx = width/2;
+            targety = height/2;
         }
         else if (str == "-encoderres")
         {

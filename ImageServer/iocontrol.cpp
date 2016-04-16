@@ -8,7 +8,6 @@
 #include "configure.h"
 #include <fstream>
 #include <sys/mman.h>
-#include <bits/fcntl-linux.h>
 #include <fcntl.h>
 
 using namespace std;
@@ -40,7 +39,7 @@ public:
                 configure->targetx = bs.getU16() * configure->width / 10000;
                 configure->targety = bs.getU16() * configure->height / 10000;
                 configure->targetWidth = bs.getU8() * configure->width / 250;
-                configure->targetHeight = bs.getU8() * configure->width / 250;
+                configure->targetHeight = bs.getU8() * configure->height/ 250;
             }
                 break;
             case 0x13:
@@ -49,7 +48,7 @@ public:
                 configure->targetx += bs.getS16() * configure->width / 10000;
                 configure->targety += bs.getS16() * configure->height / 10000;
                 configure->targetWidth += bs.getS8() * configure->width / 100;
-                configure->targetHeight += bs.getS8() * configure->width / 100;
+                configure->targetHeight += bs.getS8() * configure->height/ 100;
             }
                 break;
             case 0x14:
@@ -97,6 +96,21 @@ void IOControl::Init(string IP, int ReceivePort, int TransmitPort)
     udpPackage.port = TransmitPort;
     udpPackage.IP = IP;
     udpPackage.pbuffer=SendBuf;
+
+    const char *filepath = "/dev/shm/SPRepeaterLite_ShareFile";
+    int fd;
+    if ((fd = open(filepath, O_CREAT | O_RDWR, (mode_t)00700)) == -1)
+    {
+        perror("open");
+        exit(EXIT_FAILURE);
+    }
+
+    memBuf= (char *) mmap(NULL, 32*1024*1024, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+    if (memBuf == MAP_FAILED)
+    {
+        perror("mmap");
+        exit(EXIT_FAILURE);
+    }
 }
 
 IOControl::~IOControl()
@@ -140,24 +154,10 @@ void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep,void* 
     }
     udpPackage.len += len;
 
-    const char *filepath = "dev/shm/SPRepeaterLite_ShareFile";
-    int fd;
-    if ((fd = open(filepath, O_CREAT | O_RDWR, (mode_t)00700)) == -1)
-    {
-        perror("open");
-        exit(EXIT_FAILURE);
-    }
-
-    char* data = (char *) mmap(NULL, 32, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-    if (data == MAP_FAILED)
-    {
-        perror("mmap");
-        exit(EXIT_FAILURE);
-    }
-    int *length= (int *) data;
+    int *length= (int *) memBuf;
     if(*length == 0)
     {
-        MemoryCopy(data+4,udpPackage.pbuffer,udpPackage.len);
+        MemoryCopy(memBuf+4,udpPackage.pbuffer,udpPackage.len);
         *length = udpPackage.len;
     }
     else

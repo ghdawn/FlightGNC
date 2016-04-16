@@ -31,5 +31,7 @@ private:
     char RecBuf[MaxRecLength];
     char SendBuf[MaxSendLength];
 
+    char* memBuf;
+
 };
 #endif //IMAGESERVER_IOCONTROL_H

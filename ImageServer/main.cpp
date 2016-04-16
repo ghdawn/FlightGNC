@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     U8* pic=new U8[size*3/2];
     U8 sendbuffer[20];
     itr_vision::MeanShift *meanShift=NULL;
-
+    Matrix img_origin(config.encoderHeight, config.encoderWidth);
     Matrix img(config.height,config.width);
     RectangleF rect(config.targetx-config.targetWidth/2,config.targety-config.targetHeight/2,config.targetWidth,config.targetHeight);
     TimeClock tcDelay,tcFre;
@@ -112,11 +112,11 @@ int main(int argc, char *argv[])
         }
         if (state == TRACK)
         {
-            Matrix img_origin(encoderheight, encoderwidth);
+
             S32 *pimgI = (S32 *) img_origin.GetData();
-            itr_vision::ColorConvert::yuv420p2rgb(pimgI, pic, encoderwidth, encoderheight);
-            itr_vision::Scale::SubSampling(img_origin, img, img.GetCol()/encoderwidth );
-            meanShift->ChangeFormat(pic, img,config.encoderWidth,config.encoderHeight);
+            itr_vision::ColorConvert::yuv420p2rgb(pimgI, pic, config.encoderWidth, config.encoderHeight);
+            itr_vision::Scale::SubSampling(img_origin, img, img.GetCol()/config.encoderWidth );
+            meanShift->ChangeFormat(img);
             if (meanShift != NULL)
             {
                 meanShift->Go(img, rect);

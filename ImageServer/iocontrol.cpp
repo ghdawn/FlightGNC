@@ -160,10 +160,11 @@ void IOControl::SendData(const itr_protocol::StandardExchangePackage& sep,void* 
     {
         MemoryCopy(memBuf+4,udpPackage.pbuffer,udpPackage.len);
         *length = udpPackage.len;
+        printf("MMF Copy:%d\n",*length);
     }
     else
     {
-        perror("Skip one frame");
+        printf("Skip one frame\n");
     }
     printf("%d\n",udp->Send(udpPackage));
 }
